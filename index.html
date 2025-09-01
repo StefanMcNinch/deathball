@@ -231,18 +231,17 @@
         <div id="controls" style="display: none;">
             <div class="player-controls">
                 <div style="color: #ff4444;"><strong>RED WIZARD</strong></div>
-                <div>WASD: Move</div>
-                <div>SPACE: Jump/Bubble</div>
+                <div id="controls-p1">WASD: Move | SPACE: Jump/Bubble</div>
             </div>
             <div style="flex: 0; padding: 0 40px; font-size: 12px; color: #888;">
                 <div>• Wizards can pass through bubbles and goals</div>
                 <div>• Ball bounces off bubbles (2x wizard bounce)</div>
                 <div>• First to 5 points wins!</div>
+                <div>• Press ESC to reset positions (Host only)</div>
             </div>
             <div class="player-controls">
                 <div style="color: #4444ff;"><strong>BLUE WIZARD</strong></div>
-                <div>Arrow Keys: Move</div>
-                <div>ENTER: Jump/Bubble</div>
+                <div id="controls-p2">Arrow Keys: Move | ENTER: Jump/Bubble</div>
             </div>
         </div>
         
@@ -432,6 +431,9 @@
                         const player = playerNum === 1 ? gameState.player1 : gameState.player2;
                         jump(player);
                     }
+                    if (data.action === 'manualReset') {
+                        manualReset();
+                    }
                 }
             } else if (data.type === 'restart') {
                 restartGame();
@@ -468,11 +470,61 @@
             }
         }
         
+        function manualReset() {
+            // Only host can initiate manual reset in multiplayer
+            if (isMultiplayer && !isHost) {
+                return;
+            }
+            
+            // Remove any existing game over screen
+            const gameOverDiv = document.querySelector('.game-over');
+            if (gameOverDiv) gameOverDiv.remove();
+            
+            // Reset both players
+            gameState.player1.x = 100;
+            gameState.player1.y = 300;
+            gameState.player1.vx = 0;
+            gameState.player1.vy = 0;
+            gameState.player1.bubble = null;
+            gameState.player1.onGround = false;
+            
+            gameState.player2.x = 900;
+            gameState.player2.y = 300;
+            gameState.player2.vx = 0;
+            gameState.player2.vy = 0;
+            gameState.player2.bubble = null;
+            gameState.player2.onGround = false;
+            
+            // Reset ball
+            gameState.ball.x = 500;
+            gameState.ball.y = 300;
+            gameState.ball.vx = (Math.random() - 0.5) * 3;
+            gameState.ball.vy = (Math.random() - 0.5) * 3;
+            
+            // Don't reset scores - only reset positions and game state
+            gameState.gameRunning = true;
+            
+            // Send manual reset to other player in multiplayer
+            if (isMultiplayer && connection && connection.open) {
+                connection.send({ 
+                    type: 'input',
+                    player: myPlayerNumber,
+                    action: 'manualReset'
+                });
+            }
+            
+            console.log('Game manually reset with ESC key');
+        }
+        
         function startMultiplayerGame() {
             document.getElementById('multiplayerMenu').style.display = 'none';
             document.getElementById('gameCanvas').style.display = 'block';
             document.getElementById('controls').style.display = 'flex';
             document.getElementById('connectionStatus').style.display = 'block';
+            
+            // Update controls display for multiplayer
+            document.getElementById('controls-p1').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
             
             updateConnectionStatus('Connected - Playing!', 'connected');
             isMultiplayer = true;
@@ -483,6 +535,10 @@
             document.getElementById('multiplayerMenu').style.display = 'none';
             document.getElementById('gameCanvas').style.display = 'block';
             document.getElementById('controls').style.display = 'flex';
+            
+            // Keep original controls for local play
+            document.getElementById('controls-p1').textContent = 'WASD: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
             
             isMultiplayer = false;
             resetGameState();
@@ -534,17 +590,27 @@
             
             if (e.code === 'Space') {
                 e.preventDefault();
-                if (!isMultiplayer || myPlayerNumber === 1) {
+                if (!isMultiplayer) {
+                    // Local play - Player 1 uses space
                     jump(gameState.player1);
-                    if (isMultiplayer) sendInput({}, 'jump');
+                } else {
+                    // Multiplayer - both players use space for their own character
+                    const player = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+                    jump(player);
+                    sendInput({}, 'jump');
                 }
             }
             if (e.code === 'Enter') {
                 e.preventDefault();
-                if (!isMultiplayer || myPlayerNumber === 2) {
+                if (!isMultiplayer) {
+                    // Local play only - Player 2 uses enter
                     jump(gameState.player2);
-                    if (isMultiplayer) sendInput({}, 'jump');
                 }
+                // In multiplayer, Enter is not used
+            }
+            if (e.code === 'Escape') {
+                e.preventDefault();
+                manualReset();
             }
         });
         
@@ -573,12 +639,21 @@
             
             let jumpX = 0, jumpY = gameState.jumpPower;
             
-            if (player === gameState.player1) {
-                if (gameState.keys['KeyW']) jumpY = gameState.jumpPower;
-                if (gameState.keys['KeyS']) jumpY = -gameState.jumpPower * 0.5;
-                if (gameState.keys['KeyA']) jumpX = -gameState.moveSpeed;
-                if (gameState.keys['KeyD']) jumpX = gameState.moveSpeed;
+            if (!isMultiplayer) {
+                // Local play - original controls
+                if (player === gameState.player1) {
+                    if (gameState.keys['KeyW']) jumpY = gameState.jumpPower;
+                    if (gameState.keys['KeyS']) jumpY = -gameState.jumpPower * 0.5;
+                    if (gameState.keys['KeyA']) jumpX = -gameState.moveSpeed;
+                    if (gameState.keys['KeyD']) jumpX = gameState.moveSpeed;
+                } else {
+                    if (gameState.keys['ArrowUp']) jumpY = gameState.jumpPower;
+                    if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
+                    if (gameState.keys['ArrowLeft']) jumpX = -gameState.moveSpeed;
+                    if (gameState.keys['ArrowRight']) jumpX = gameState.moveSpeed;
+                }
             } else {
+                // Multiplayer - both players use arrow keys
                 if (gameState.keys['ArrowUp']) jumpY = gameState.jumpPower;
                 if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
                 if (gameState.keys['ArrowLeft']) jumpX = -gameState.moveSpeed;
