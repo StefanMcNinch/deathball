@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deathball P2P</title>
+    <title>Deathball P2P - Wizard Soccer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.0/peerjs.min.js"></script>
     <style>
         body {
@@ -19,12 +19,12 @@
             overflow: auto;
         }
         
-        #container {
+        #gameContainer {
             text-align: center;
             position: relative;
         }
         
-        canvas {
+        #gameCanvas {
             background: #001122;
         }
         
@@ -35,9 +35,9 @@
             right: 10px;
             display: flex;
             justify-content: space-between;
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
-            text-shadow: 0 0 10px #fff;
+            text-shadow: 0 0 10px #ffffff;
             pointer-events: none;
             z-index: 10;
         }
@@ -45,48 +45,91 @@
         #controls {
             margin-top: 20px;
             font-size: 14px;
-            color: #ccc;
-            display: none;
+            color: #cccccc;
+            display: flex;
+            justify-content: space-around;
         }
         
-        .menu, .game-over {
+        .player-controls {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .score-display {
+            font-size: 48px;
+            margin: 0 40px;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border: 3px solid #ffffff;
+            font-size: 24px;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 30px #ffffff;
+        }
+        
+        .restart-btn {
+            background: #ffffff;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 18px;
+            box-shadow: 0 0 10px #ffffff;
+        }
+        
+        .restart-btn:hover {
+            background: #cccccc;
+        }
+        
+        /* Multiplayer UI */
+        #multiplayerMenu {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.95);
             padding: 30px;
-            border: 3px solid #fff;
+            border: 3px solid #ffffff;
             text-align: center;
             z-index: 200;
-            box-shadow: 0 0 30px #fff;
-            min-width: 350px;
+            box-shadow: 0 0 30px #ffffff;
+            min-width: 400px;
         }
         
-        .btn {
-            background: #fff;
+        .menu-btn {
+            background: #ffffff;
             color: black;
             border: none;
             padding: 15px 30px;
             margin: 10px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 16px;
-            box-shadow: 0 0 10px #fff;
+            font-size: 18px;
+            box-shadow: 0 0 10px #ffffff;
+            min-width: 150px;
         }
         
-        .btn:hover {
-            background: #ccc;
+        .menu-btn:hover {
+            background: #cccccc;
         }
         
-        .btn:disabled {
+        .menu-btn:disabled {
             background: #666;
             color: #ccc;
             cursor: not-allowed;
         }
         
         #roomCode {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             color: #ffff00;
             margin: 15px 0;
@@ -95,9 +138,9 @@
             border: 2px solid #ffff00;
         }
         
-        input {
+        #joinInput {
             padding: 10px;
-            font-size: 16px;
+            font-size: 18px;
             margin: 10px;
             background: #333;
             color: white;
@@ -105,7 +148,7 @@
             text-align: center;
         }
         
-        .status {
+        .status-message {
             margin: 15px 0;
             padding: 10px;
             border-radius: 5px;
@@ -128,519 +171,792 @@
             color: #ff4444;
             border: 1px solid #ff4444;
         }
+        
+        #connectionStatus {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 15;
+        }
+        
+        .local-play-btn {
+            background: #666;
+            color: white;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="menu" class="menu">
+    <div id="gameContainer">
+        <!-- Multiplayer Menu -->
+        <div id="multiplayerMenu">
             <h2>Deathball P2P</h2>
-            <div id="main-menu">
-                <button class="btn" onclick="host()">HOST GAME</button>
-                <button class="btn" onclick="showJoin()">JOIN GAME</button>
-                <button class="btn" onclick="local()">LOCAL PLAY</button>
+            <p>Choose your game mode:</p>
+            
+            <div id="menuOptions">
+                <button class="menu-btn" onclick="hostGame()">HOST GAME</button>
+                <button class="menu-btn" onclick="showJoinUI()">JOIN GAME</button>
+                <button class="menu-btn local-play-btn" onclick="startLocalGame()">LOCAL PLAY</button>
             </div>
             
-            <div id="host-ui" style="display: none;">
-                <h3>Room Code:</h3>
+            <div id="hostUI" style="display: none;">
+                <h3>Share this Room Code:</h3>
                 <div id="roomCode">Generating...</div>
-                <div class="status status-connecting">Waiting for player...</div>
-                <button class="btn" onclick="back()">BACK</button>
+                <div class="status-message status-connecting">
+                    Waiting for player to join...
+                </div>
+                <button class="menu-btn" onclick="backToMenu()">BACK</button>
             </div>
             
-            <div id="join-ui" style="display: none;">
+            <div id="joinUI" style="display: none;">
                 <h3>Enter Room Code:</h3>
-                <input type="text" id="joinInput" placeholder="Room code" maxlength="10">
+                <input type="text" id="joinInput" placeholder="Enter room code" maxlength="10">
                 <br>
-                <button class="btn" onclick="join()">JOIN</button>
-                <button class="btn" onclick="back()">BACK</button>
+                <button class="menu-btn" onclick="joinGame()">JOIN</button>
+                <button class="menu-btn" onclick="backToMenu()">BACK</button>
                 <div id="joinStatus"></div>
             </div>
         </div>
         
+        <!-- Game UI -->
         <div id="hud">
-            <div style="color: #f44;">P1: <span id="score1">0</span></div>
-            <div>DEATHBALL</div>
-            <div style="color: #44f;">P2: <span id="score2">0</span></div>
+            <div style="color: #ff4444;">Player 1: <span id="score1">0</span></div>
+            <div class="score-display">DEATHBALL</div>
+            <div style="color: #4444ff;">Player 2: <span id="score2">0</span></div>
+        </div>
+        <canvas id="gameCanvas" width="1025" height="625" style="display: none;"></canvas>
+        <div id="controls" style="display: none;">
+            <div class="player-controls">
+                <div style="color: #ff4444;"><strong>RED WIZARD</strong></div>
+                <div id="controls-p1">WASD: Move | SPACE: Jump/Bubble</div>
+            </div>
+            <div style="flex: 0; padding: 0 40px; font-size: 12px; color: #888;">
+                <div>• Wizards can pass through bubbles and goals</div>
+                <div>• Ball bounces off bubbles (2x wizard bounce)</div>
+                <div>• First to 5 points wins!</div>
+                <div>• Press ESC to reset positions (Host only)</div>
+            </div>
+            <div class="player-controls">
+                <div style="color: #4444ff;"><strong>BLUE WIZARD</strong></div>
+                <div id="controls-p2">Arrow Keys: Move | ENTER: Jump/Bubble</div>
+            </div>
         </div>
         
-        <canvas id="canvas" width="1500" height="900" style="display: none;"></canvas>
-        
-        <div id="controls">
-            WASD/Arrows: Move | Space/Enter: Jump/Bubble | ESC: Reset | First to 5 wins!
-        </div>
+        <!-- Connection Status -->
+        <div id="connectionStatus" style="display: none;"></div>
     </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        let peer = null, conn = null, isHost = false, isMP = false, myPlayer = 1;
+        // Networking variables
+        let peer = null;
+        let connection = null;
+        let isHost = false;
+        let isMultiplayer = false;
+        let myPlayerNumber = 1;
+        let lastSentTime = 0;
+        const SYNC_INTERVAL = 16; // ~60fps sync
         
-        let game = {
-            p1: { x: 150, y: 450, vx: 0, vy: 0, r: 15, score: 0, bubbles: [], ground: false },
-            p2: { x: 1350, y: 450, vx: 0, vy: 0, r: 15, score: 0, bubbles: [], ground: false },
-            ball: { x: 750, y: 450, vx: 0, vy: 0, r: 15 },
-            goal1: { x: 300, y: 300, r: 50 },
-            goal2: { x: 1200, y: 300, r: 50 },
+        // Game state
+        let gameState = {
+            player1: {
+                x: 100,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                radius: 15,
+                color: '#ff4444',
+                score: 0,
+                bubble: null,
+                onGround: false
+            },
+            player2: {
+                x: 900,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                radius: 15,
+                color: '#4444ff',
+                score: 0,
+                bubble: null,
+                onGround: false
+            },
+            ball: {
+                x: 500,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                radius: 15,
+                color: '#ffffff'
+            },
+            goal1: { x: 200, y: 200, radius: 50, color: '#ff4444' },
+            goal2: { x: 800, y: 200, radius: 50, color: '#4444ff' },
             walls: [
-                { x: 0, y: 25, w: 25, h: 850 },
-                { x: 1475, y: 25, w: 25, h: 850 },
-                { x: 25, y: 0, w: 1450, h: 25 },
-                { x: 25, y: 875, w: 1450, h: 25 }
+                { x: 0, y: 25, width: 25, height: 575 },
+                { x: 1000, y: 25, width: 25, height: 575 },
+                { x: 25, y: 0, width: 975, height: 25 },
+                { x: 25, y: 600, width: 975, height: 25 }
+            ],
+            corners: [
+                { x: 0, y: 0, radius: 25, type: 'tl' },
+                { x: 1000, y: 0, radius: 25, type: 'tr' },
+                { x: 0, y: 600, radius: 25, type: 'bl' },
+                { x: 1000, y: 600, radius: 25, type: 'br' }
             ],
             keys: {},
-            running: true,
-            gravity: 0.4,
-            ballGrav: 0.165,
+            gameRunning: true,
+            gravity: 0.375,
+            ballGravity: 0.147,
             friction: 0.8,
-            jump: -9,
-            speed: 4.4,
-            bubbleLifetime: 500
+            jumpPower: -9,
+            moveSpeed: 4.125,
+            slowZoneActive: false
         };
         
-        function generateCode() {
+        // Networking Functions
+        function generateRoomCode() {
             return Math.random().toString(36).substr(2, 6).toUpperCase();
         }
         
-        function host() {
-            const code = generateCode();
-            peer = new Peer(code);
+        function hostGame() {
+            const roomCode = generateRoomCode();
+            peer = new Peer(roomCode);
             isHost = true;
-            myPlayer = 1;
+            myPlayerNumber = 1;
             
-            show('main-menu', false);
-            show('host-ui', true);
-            document.getElementById('roomCode').textContent = code;
+            document.getElementById('menuOptions').style.display = 'none';
+            document.getElementById('hostUI').style.display = 'block';
+            document.getElementById('roomCode').textContent = roomCode;
             
-            peer.on('open', () => console.log('Host ready:', code));
-            peer.on('connection', (c) => {
-                conn = c;
-                setupConn();
-                setTimeout(startMP, 1000);
+            peer.on('open', () => {
+                console.log('Host peer opened with ID:', roomCode);
+                updateConnectionStatus('Waiting for player...', 'connecting');
             });
-            peer.on('error', (err) => console.error('Peer error:', err));
+            
+            peer.on('connection', (conn) => {
+                connection = conn;
+                setupConnection();
+                updateConnectionStatus('Player joined!', 'connected');
+                
+                setTimeout(() => {
+                    startMultiplayerGame();
+                }, 1000);
+            });
+            
+            peer.on('error', (err) => {
+                console.error('Peer error:', err);
+                updateConnectionStatus('Connection error: ' + err.message, 'error');
+            });
         }
         
-        function showJoin() {
-            show('main-menu', false);
-            show('join-ui', true);
+        function showJoinUI() {
+            document.getElementById('menuOptions').style.display = 'none';
+            document.getElementById('joinUI').style.display = 'block';
             document.getElementById('joinInput').focus();
         }
         
-        function join() {
-            const code = document.getElementById('joinInput').value.trim().toUpperCase();
-            if (!code) return;
+        function joinGame() {
+            const roomCode = document.getElementById('joinInput').value.trim().toUpperCase();
+            if (!roomCode) {
+                showJoinStatus('Please enter a room code', 'error');
+                return;
+            }
             
             peer = new Peer();
             isHost = false;
-            myPlayer = 2;
+            myPlayerNumber = 2;
             
             peer.on('open', () => {
-                conn = peer.connect(code);
-                setupConn();
+                console.log('Joining room:', roomCode);
+                connection = peer.connect(roomCode);
+                setupConnection();
+                showJoinStatus('Connecting...', 'connecting');
             });
-            peer.on('error', (err) => showStatus('Failed to connect', 'error'));
+            
+            peer.on('error', (err) => {
+                console.error('Join error:', err);
+                showJoinStatus('Failed to connect: ' + err.message, 'error');
+            });
         }
         
-        function setupConn() {
-            conn.on('open', () => {
-                isMP = true;
-                if (!isHost) setTimeout(startMP, 1000);
+        function setupConnection() {
+            connection.on('open', () => {
+                console.log('Connected to peer');
+                isMultiplayer = true;
+                
+                if (!isHost) {
+                    showJoinStatus('Connected! Starting game...', 'connected');
+                    setTimeout(() => {
+                        startMultiplayerGame();
+                    }, 1000);
+                }
             });
-            conn.on('data', handleData);
-            conn.on('close', () => isMP = false);
+            
+            connection.on('data', (data) => {
+                handleNetworkMessage(data);
+            });
+            
+            connection.on('close', () => {
+                console.log('Connection closed');
+                updateConnectionStatus('Connection lost', 'error');
+                isMultiplayer = false;
+            });
+            
+            connection.on('error', (err) => {
+                console.error('Connection error:', err);
+                updateConnectionStatus('Connection error', 'error');
+            });
         }
         
-        function handleData(data) {
-            if (data.type === 'state' && !isHost) {
-                Object.assign(game, data.game);
+        function handleNetworkMessage(data) {
+            if (data.type === 'gameState') {
+                // Receive game state updates from host
+                if (!isHost) {
+                    gameState = { ...gameState, ...data.state };
+                }
             } else if (data.type === 'input') {
-                if (data.keys) Object.assign(game.keys, data.keys);
-                if (data.action === 'jump') jumpPlayer(data.player === 1 ? game.p1 : game.p2);
-                if (data.action === 'reset') resetPos();
+                // Receive input from the other player
+                const playerNum = data.player;
+                if (playerNum !== myPlayerNumber) {
+                    // Apply the other player's inputs
+                    if (data.keys) {
+                        Object.assign(gameState.keys, data.keys);
+                    }
+                    if (data.action === 'jump') {
+                        const player = playerNum === 1 ? gameState.player1 : gameState.player2;
+                        jump(player);
+                    }
+                    if (data.action === 'manualReset') {
+                        manualReset();
+                    }
+                }
             } else if (data.type === 'restart') {
-                restart();
+                restartGame();
             }
         }
         
-        function sendState() {
-            if (conn && conn.open && isHost) {
-                conn.send({ type: 'state', game: game });
+        function sendGameState() {
+            if (connection && connection.open && isHost) {
+                const now = Date.now();
+                if (now - lastSentTime >= SYNC_INTERVAL) {
+                    connection.send({
+                        type: 'gameState',
+                        state: {
+                            player1: gameState.player1,
+                            player2: gameState.player2,
+                            ball: gameState.ball,
+                            slowZoneActive: gameState.slowZoneActive,
+                            gameRunning: gameState.gameRunning
+                        }
+                    });
+                    lastSentTime = now;
+                }
             }
         }
         
         function sendInput(keys, action = null) {
-            if (conn && conn.open) {
-                conn.send({ type: 'input', player: myPlayer, keys: keys, action: action });
+            if (connection && connection.open) {
+                connection.send({
+                    type: 'input',
+                    player: myPlayerNumber,
+                    keys: keys,
+                    action: action
+                });
             }
         }
         
-        function startMP() {
-            document.getElementById('menu').style.display = 'none';
-            canvas.style.display = 'block';
-            document.getElementById('controls').style.display = 'block';
-            isMP = true;
-            reset();
-        }
-        
-        function local() {
-            document.getElementById('menu').style.display = 'none';
-            canvas.style.display = 'block';
-            document.getElementById('controls').style.display = 'block';
-            isMP = false;
-            reset();
-        }
-        
-        function back() {
-            show('main-menu', true);
-            show('host-ui', false);
-            show('join-ui', false);
-            if (peer) peer.destroy();
-            if (conn) conn.close();
-            peer = null;
-            conn = null;
-            isHost = false;
-            isMP = false;
-        }
-        
-        function show(id, visible) {
-            document.getElementById(id).style.display = visible ? 'block' : 'none';
-        }
-        
-        function showStatus(msg, type) {
-            const el = document.getElementById('joinStatus');
-            el.innerHTML = `<div class="status status-${type}">${msg}</div>`;
-        }
-        
-        document.addEventListener('keydown', (e) => {
-            game.keys[e.code] = true;
+        function manualReset() {
+            // Only host can initiate manual reset in multiplayer
+            if (isMultiplayer && !isHost) {
+                return;
+            }
             
-            if (isMP) sendInput({ [e.code]: true });
+            // Remove any existing game over screen
+            const gameOverDiv = document.querySelector('.game-over');
+            if (gameOverDiv) gameOverDiv.remove();
+            
+            // Reset both players
+            gameState.player1.x = 100;
+            gameState.player1.y = 300;
+            gameState.player1.vx = 0;
+            gameState.player1.vy = 0;
+            gameState.player1.bubble = null;
+            gameState.player1.onGround = false;
+            
+            gameState.player2.x = 900;
+            gameState.player2.y = 300;
+            gameState.player2.vx = 0;
+            gameState.player2.vy = 0;
+            gameState.player2.bubble = null;
+            gameState.player2.onGround = false;
+            
+            // Reset ball
+            gameState.ball.x = 500;
+            gameState.ball.y = 300;
+            gameState.ball.vx = (Math.random() - 0.5) * 3;
+            gameState.ball.vy = (Math.random() - 0.5) * 3;
+            
+            // Don't reset scores - only reset positions and game state
+            gameState.gameRunning = true;
+            
+            // Send manual reset to other player in multiplayer
+            if (isMultiplayer && connection && connection.open) {
+                connection.send({ 
+                    type: 'input',
+                    player: myPlayerNumber,
+                    action: 'manualReset'
+                });
+            }
+            
+            console.log('Game manually reset with ESC key');
+        }
+        
+        function startMultiplayerGame() {
+            document.getElementById('multiplayerMenu').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'block';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('connectionStatus').style.display = 'block';
+            
+            // Update controls display for multiplayer
+            document.getElementById('controls-p1').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
+            
+            updateConnectionStatus('Connected - Playing!', 'connected');
+            isMultiplayer = true;
+            resetGameState();
+        }
+        
+        function startLocalGame() {
+            document.getElementById('multiplayerMenu').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'block';
+            document.getElementById('controls').style.display = 'flex';
+            
+            // Keep original controls for local play
+            document.getElementById('controls-p1').textContent = 'WASD: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
+            
+            isMultiplayer = false;
+            resetGameState();
+        }
+        
+        function backToMenu() {
+            document.getElementById('menuOptions').style.display = 'block';
+            document.getElementById('hostUI').style.display = 'none';
+            document.getElementById('joinUI').style.display = 'none';
+            document.getElementById('joinStatus').innerHTML = '';
+            
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            if (connection) {
+                connection.close();
+                connection = null;
+            }
+            isHost = false;
+            isMultiplayer = false;
+        }
+        
+        function updateConnectionStatus(message, type) {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = message;
+            status.className = `status-${type}`;
+        }
+        
+        function showJoinStatus(message, type) {
+            const status = document.getElementById('joinStatus');
+            status.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+        }
+        
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            gameState.keys[e.code] = true;
+            
+            if (isMultiplayer) {
+                // Send input to other player
+                const myKeys = {};
+                if (myPlayerNumber === 1) {
+                    myKeys[e.code] = gameState.keys[e.code];
+                } else {
+                    myKeys[e.code] = gameState.keys[e.code];
+                }
+                sendInput(myKeys);
+            }
             
             if (e.code === 'Space') {
                 e.preventDefault();
-                const player = (!isMP || myPlayer === 1) ? game.p1 : game.p2;
-                jumpPlayer(player);
-                if (isMP) sendInput({}, 'jump');
+                if (!isMultiplayer) {
+                    // Local play - Player 1 uses space
+                    jump(gameState.player1);
+                } else {
+                    // Multiplayer - both players use space for their own character
+                    const player = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+                    jump(player);
+                    sendInput({}, 'jump');
+                }
             }
-            
-            if (e.code === 'Enter' && !isMP) {
+            if (e.code === 'Enter') {
                 e.preventDefault();
-                jumpPlayer(game.p2);
+                if (!isMultiplayer) {
+                    // Local play only - Player 2 uses enter
+                    jump(gameState.player2);
+                }
+                // In multiplayer, Enter is not used
             }
-            
             if (e.code === 'Escape') {
                 e.preventDefault();
-                resetPos();
+                manualReset();
             }
         });
         
         document.addEventListener('keyup', (e) => {
-            game.keys[e.code] = false;
-            if (isMP) sendInput({ [e.code]: false });
+            gameState.keys[e.code] = false;
+            
+            if (isMultiplayer) {
+                const myKeys = {};
+                myKeys[e.code] = false;
+                sendInput(myKeys);
+            }
         });
         
-        function jumpPlayer(p) {
-            const currentTime = Date.now();
-            
-            // Mark older bubbles with expiration when creating a new one
-            p.bubbles.forEach(bubble => {
-                if (!bubble.expiresAt) {
-                    bubble.expiresAt = currentTime + game.bubbleLifetime;
-                }
-            });
-            
-            // Create new bubble
-            const newBubble = { 
-                x: p.x, 
-                y: p.y, 
-                r: 55, 
-                alpha: 0.8,
-                createdAt: currentTime,
-                static: true
-            };
-            p.bubbles.push(newBubble);
-            
-            let jumpX = 0, jumpY = game.jump;
-            
-            if (!isMP) {
-                if (p === game.p1) {
-                    if (game.keys['KeyW']) jumpY = game.jump;
-                    if (game.keys['KeyS']) jumpY = -game.jump * 0.5;
-                    if (game.keys['KeyA']) jumpX = -game.speed;
-                    if (game.keys['KeyD']) jumpX = game.speed;
-                } else {
-                    if (game.keys['ArrowUp']) jumpY = game.jump;
-                    if (game.keys['ArrowDown']) jumpY = -game.jump * 0.5;
-                    if (game.keys['ArrowLeft']) jumpX = -game.speed;
-                    if (game.keys['ArrowRight']) jumpX = game.speed;
-                }
-            } else {
-                if (game.keys['ArrowUp']) jumpY = game.jump;
-                if (game.keys['ArrowDown']) jumpY = -game.jump * 0.5;
-                if (game.keys['ArrowLeft']) jumpX = -game.speed;
-                if (game.keys['ArrowRight']) jumpX = game.speed;
+        // Game functions (keeping your original logic)
+        function jump(player) {
+            if (player.bubble) {
+                player.bubble = null;
             }
             
-            // If purely horizontal movement, reduce vertical component
-            if (jumpX !== 0 && jumpY === game.jump) {
-                jumpY *= 0.3; // Reduce upward jump when moving sideways
+            player.bubble = {
+                x: player.x,
+                y: player.y,
+                radius: 50,
+                alpha: 0.8
+            };
+            
+            let jumpX = 0, jumpY = gameState.jumpPower;
+            
+            if (!isMultiplayer) {
+                // Local play - original controls
+                if (player === gameState.player1) {
+                    if (gameState.keys['KeyW']) jumpY = gameState.jumpPower;
+                    if (gameState.keys['KeyS']) jumpY = -gameState.jumpPower * 0.5;
+                    if (gameState.keys['KeyA']) jumpX = -gameState.moveSpeed;
+                    if (gameState.keys['KeyD']) jumpX = gameState.moveSpeed;
+                } else {
+                    if (gameState.keys['ArrowUp']) jumpY = gameState.jumpPower;
+                    if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
+                    if (gameState.keys['ArrowLeft']) jumpX = -gameState.moveSpeed;
+                    if (gameState.keys['ArrowRight']) jumpX = gameState.moveSpeed;
+                }
+            } else {
+                // Multiplayer - both players use arrow keys
+                if (gameState.keys['ArrowUp']) jumpY = gameState.jumpPower;
+                if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
+                if (gameState.keys['ArrowLeft']) jumpX = -gameState.moveSpeed;
+                if (gameState.keys['ArrowRight']) jumpX = gameState.moveSpeed;
             }
             
             const thrustMultiplier = 1.3;
-            p.vx = jumpX * thrustMultiplier;
-            p.vy = jumpY * thrustMultiplier;
-            p.ground = false;
+            player.vx = jumpX * thrustMultiplier;
+            player.vy = jumpY * thrustMultiplier;
+            player.onGround = false;
         }
         
-        function updatePlayer(p) {
-            if (isMP && !isHost) return;
+        function updatePlayer(player) {
+            // Only update the player we control in multiplayer
+            if (isMultiplayer && !isHost) {
+                return; // Non-host players receive updates from host
+            }
             
-            // In multiplayer, each player only controls their own character
-            if (isMP) {
-                if ((myPlayer === 1 && p === game.p1) || (myPlayer === 2 && p === game.p2)) {
-                    if (game.keys['ArrowLeft']) p.vx = Math.max(p.vx - 0.5, -game.speed);
-                    if (game.keys['ArrowRight']) p.vx = Math.min(p.vx + 0.5, game.speed);
-                    if (game.keys['ArrowUp']) p.vy = Math.max(p.vy - 0.5, -game.speed * 0.8);
-                    if (game.keys['ArrowDown']) p.vy = Math.min(p.vy + 0.5, game.speed * 0.8);
-                }
+            const dist1 = Math.sqrt((player.x - gameState.goal1.x) ** 2 + (player.y - gameState.goal1.y) ** 2);
+            const dist2 = Math.sqrt((player.x - gameState.goal2.x) ** 2 + (player.y - gameState.goal2.y) ** 2);
+            const ballDist1 = Math.sqrt((gameState.ball.x - gameState.goal1.x) ** 2 + (gameState.ball.y - gameState.goal1.y) ** 2);
+            const ballDist2 = Math.sqrt((gameState.ball.x - gameState.goal2.x) ** 2 + (gameState.ball.y - gameState.goal2.y) ** 2);
+            
+            const slowZoneDistance = gameState.ball.radius + gameState.goal1.radius + 20;
+            gameState.slowZoneActive = (ballDist1 < slowZoneDistance || ballDist2 < slowZoneDistance);
+            
+            const speedMultiplier = gameState.slowZoneActive ? 0.5 : 1.0;
+            const currentMoveSpeed = gameState.moveSpeed * speedMultiplier;
+            
+            if (player === gameState.player1) {
+                if (gameState.keys['KeyA']) player.vx = Math.max(player.vx - 0.5, -currentMoveSpeed);
+                if (gameState.keys['KeyD']) player.vx = Math.min(player.vx + 0.5, currentMoveSpeed);
             } else {
-                // Local play - each player has their own keys
-                if (p === game.p1) {
-                    if (game.keys['KeyA']) p.vx = Math.max(p.vx - 0.5, -game.speed);
-                    if (game.keys['KeyD']) p.vx = Math.min(p.vx + 0.5, game.speed);
-                } else {
-                    if (game.keys['ArrowLeft']) p.vx = Math.max(p.vx - 0.5, -game.speed);
-                    if (game.keys['ArrowRight']) p.vx = Math.min(p.vx + 0.5, game.speed);
-                }
+                if (gameState.keys['ArrowLeft']) player.vx = Math.max(player.vx - 0.5, -currentMoveSpeed);
+                if (gameState.keys['ArrowRight']) player.vx = Math.min(player.vx + 0.5, currentMoveSpeed);
             }
             
-            if (!p.ground) p.vy += game.gravity;
-            if (p.ground) p.vx *= game.friction;
+            if (!player.onGround) {
+                player.vy += gameState.gravity;
+            }
             
-            p.x += p.vx;
-            p.y += p.vy;
-            p.ground = false;
+            if (player.onGround) {
+                player.vx *= gameState.friction;
+            }
             
-            // Wall collisions - check floor first to prevent fall-through
-            for (let w of game.walls) {
-                if (p.x + p.r > w.x && p.x - p.r < w.x + w.w &&
-                    p.y + p.r > w.y && p.y - p.r < w.y + w.h) {
+            player.x += player.vx * speedMultiplier;
+            player.y += player.vy * speedMultiplier;
+            
+            player.onGround = false;
+            for (let wall of gameState.walls) {
+                if (player.x + player.radius > wall.x && 
+                    player.x - player.radius < wall.x + wall.width &&
+                    player.y + player.radius > wall.y &&
+                    player.y - player.radius < wall.y + wall.height) {
                     
-                    // Floor collision (bottom wall) - prioritize this
-                    if (p.vy >= 0 && p.y - p.r < w.y + w.h && p.y > w.y) {
-                        p.y = w.y - p.r;
-                        p.vy = 0;
-                        p.ground = true;
+                    if (player.vy > 0 && player.y < wall.y) {
+                        player.y = wall.y - player.radius;
+                        player.vy = 0;
+                        player.onGround = true;
                     }
-                    // Ceiling collision  
-                    else if (p.vy < 0 && p.y + p.r > w.y && p.y < w.y + w.h) {
-                        p.y = w.y + w.h + p.r;
-                        p.vy = 0;
+                    else if (player.vy < 0 && player.y > wall.y + wall.height) {
+                        player.y = wall.y + wall.height + player.radius;
+                        player.vy = 0;
                     }
-                    // Left wall collision
-                    else if (p.vx > 0 && p.x - p.r < w.x + w.w && p.x < w.x + w.w) {
-                        p.x = w.x - p.r;
-                        p.vx = 0;
+                    else if (player.vx > 0 && player.x < wall.x) {
+                        player.x = wall.x - player.radius;
+                        player.vx = 0;
                     }
-                    // Right wall collision
-                    else if (p.vx < 0 && p.x + p.r > w.x && p.x > w.x) {
-                        p.x = w.x + w.w + p.r;
-                        p.vx = 0;
+                    else if (player.vx < 0 && player.x > wall.x + wall.width) {
+                        player.x = wall.x + wall.width + player.radius;
+                        player.vx = 0;
                     }
                 }
             }
             
-            // Bounds with stricter floor check
-            if (p.x - p.r < 25) {
-                p.x = 25 + p.r;
-                p.vx = 0;
-            } else if (p.x + p.r > canvas.width - 25) {
-                p.x = canvas.width - 25 - p.r;
-                p.vx = 0;
+            if (player.x - player.radius < 25) {
+                player.x = 25 + player.radius;
+                player.vx = 0;
+            } else if (player.x + player.radius > canvas.width - 25) {
+                player.x = canvas.width - 25 - player.radius;
+                player.vx = 0;
             }
             
-            // Emergency floor check - prevent falling below game area
-            if (p.y + p.r > canvas.height - 25) {
-                p.y = canvas.height - 25 - p.r;
-                p.vy = 0;
-                p.ground = true;
-            }
-        }
-        
-        function updateBubbles() {
-            const currentTime = Date.now();
-            
-            [game.p1, game.p2].forEach(p => {
-                // Remove expired bubbles
-                p.bubbles = p.bubbles.filter(bubble => {
-                    return !bubble.expiresAt || currentTime < bubble.expiresAt;
-                });
+            gameState.corners.forEach(corner => {
+                const dx = player.x - (corner.x + (corner.type.includes('r') ? 0 : corner.radius));
+                const dy = player.y - (corner.y + (corner.type.includes('b') ? 0 : corner.radius));
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                // Only the newest bubble is static
-                p.bubbles.forEach((bubble, index) => {
-                    bubble.static = (index === p.bubbles.length - 1);
-                });
+                if (distance < corner.radius + player.radius) {
+                    const angle = Math.atan2(dy, dx);
+                    const targetX = (corner.x + (corner.type.includes('r') ? 0 : corner.radius)) + Math.cos(angle) * (corner.radius + player.radius);
+                    const targetY = (corner.y + (corner.type.includes('b') ? 0 : corner.radius)) + Math.sin(angle) * (corner.radius + player.radius);
+                    player.x = targetX;
+                    player.y = targetY;
+                    player.vx = 0;
+                    player.vy = 0;
+                }
             });
         }
         
         function updateBall() {
-            if (isMP && !isHost) return;
+            // Only host updates ball in multiplayer
+            if (isMultiplayer && !isHost) {
+                return;
+            }
             
-            const b = game.ball;
-            b.vy += game.ballGrav;
-            b.vx *= 0.999;
-            b.vy *= 0.999;
+            const ball = gameState.ball;
+            ball.vy += gameState.ballGravity;
+            ball.vx *= 0.999;
+            ball.vy *= 0.999;
             
-            b.x += b.vx;
-            b.y += b.vy;
+            const speedMultiplier = gameState.slowZoneActive ? 0.5 : 1.0;
+            ball.x += ball.vx * speedMultiplier;
+            ball.y += ball.vy * speedMultiplier;
             
-            // Wall collisions
-            for (let w of game.walls) {
-                if (b.x + b.r > w.x && b.x - b.r < w.x + w.w &&
-                    b.y + b.r > w.y && b.y - b.r < w.y + w.h) {
+            for (let wall of gameState.walls) {
+                if (ball.x + ball.radius > wall.x && 
+                    ball.x - ball.radius < wall.x + wall.width &&
+                    ball.y + ball.radius > wall.y &&
+                    ball.y - ball.radius < wall.y + wall.height) {
                     
-                    if (b.vy > 0 && b.y < w.y) {
-                        b.y = w.y - b.r;
-                        b.vy = -Math.abs(b.vy) * 0.85;
-                    } else if (b.vy < 0 && b.y > w.y + w.h) {
-                        b.y = w.y + w.h + b.r;
-                        b.vy = Math.abs(b.vy) * 0.85;
-                    } else if (b.vx > 0 && b.x < w.x) {
-                        b.x = w.x - b.r;
-                        b.vx = -Math.abs(b.vx) * 0.85;
-                    } else if (b.vx < 0 && b.x > w.x + w.w) {
-                        b.x = w.x + w.w + b.r;
-                        b.vx = -Math.abs(b.vx) * 0.85;
+                    if (ball.vy > 0 && ball.y < wall.y) {
+                        ball.y = wall.y - ball.radius;
+                        ball.vy = -Math.abs(ball.vy) * 0.85;
+                    }
+                    else if (ball.vy < 0 && ball.y > wall.y + wall.height) {
+                        ball.y = wall.y + wall.height + ball.radius;
+                        ball.vy = Math.abs(ball.vy) * 0.85;
+                    }
+                    else if (ball.vx > 0 && ball.x < wall.x) {
+                        ball.x = wall.x - ball.radius;
+                        ball.vx = -Math.abs(ball.vx) * 0.85;
+                    }
+                    else if (ball.vx < 0 && ball.x > wall.x + wall.width) {
+                        ball.x = wall.x + wall.width + ball.radius;
+                        ball.vx = Math.abs(ball.vx) * 0.85;
                     }
                 }
             }
             
-            // Bubble collisions
-            [game.p1, game.p2].forEach(p => {
-                p.bubbles.forEach(bubble => {
-                    const dist = Math.sqrt((b.x - bubble.x) ** 2 + (b.y - bubble.y) ** 2);
-                    if (dist < b.r + bubble.r) {
-                        const angle = Math.atan2(b.y - bubble.y, b.x - bubble.x);
-                        b.vx = Math.cos(angle) * 10;
-                        b.vy = Math.sin(angle) * 10;
-                        b.x = bubble.x + Math.cos(angle) * (b.r + bubble.r);
-                        b.y = bubble.y + Math.sin(angle) * (b.r + bubble.r);
+            [gameState.player1, gameState.player2].forEach(player => {
+                if (player.bubble) {
+                    const dist = Math.sqrt((ball.x - player.bubble.x) ** 2 + (ball.y - player.bubble.y) ** 2);
+                    if (dist < ball.radius + player.bubble.radius) {
+                        const angle = Math.atan2(ball.y - player.bubble.y, ball.x - player.bubble.x);
+                        const force = 10;
+                        ball.vx = Math.cos(angle) * force;
+                        ball.vy = Math.sin(angle) * force;
+                        ball.x = player.bubble.x + Math.cos(angle) * (ball.radius + player.bubble.radius);
+                        ball.y = player.bubble.y + Math.sin(angle) * (ball.radius + player.bubble.radius);
+                    }
+                }
+            });
+            
+            [gameState.player1, gameState.player2].forEach(player => {
+                const dist = Math.sqrt((ball.x - player.x) ** 2 + (ball.y - player.y) ** 2);
+                if (dist < ball.radius + player.radius) {
+                    const angle = Math.atan2(ball.y - player.y, ball.x - player.x);
+                    const force = 6;
+                    ball.vx = Math.cos(angle) * force;
+                    ball.vy = Math.sin(angle) * force;
+                    ball.x = player.x + Math.cos(angle) * (ball.radius + player.radius);
+                    ball.y = player.y + Math.sin(angle) * (ball.radius + player.radius);
+                }
+            });
+            
+            if (ball.y - ball.radius < 25) {
+                ball.y = 25 + ball.radius;
+                ball.vy = Math.abs(ball.vy) * 0.85;
+            } else if (ball.y + ball.radius > canvas.height - 25) {
+                ball.y = canvas.height - 25 - ball.radius;
+                ball.vy = -Math.abs(ball.vy) * 0.85;
+            }
+            
+            if (ball.x - ball.radius < 25) {
+                ball.x = 25 + ball.radius;
+                ball.vx = Math.abs(ball.vx) * 0.85;
+            } else if (ball.x + ball.radius > canvas.width - 25) {
+                ball.x = canvas.width - 25 - ball.radius;
+                ball.vx = -Math.abs(ball.vx) * 0.85;
+            }
+            
+            if (gameState.corners) {
+                gameState.corners.forEach(corner => {
+                    const dx = ball.x - (corner.x + (corner.type.includes('r') ? 0 : corner.radius));
+                    const dy = ball.y - (corner.y + (corner.type.includes('b') ? 0 : corner.radius));
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < corner.radius + ball.radius) {
+                        const angle = Math.atan2(dy, dx);
+                        const targetX = (corner.x + (corner.type.includes('r') ? 0 : corner.radius)) + Math.cos(angle) * (corner.radius + ball.radius);
+                        const targetY = (corner.y + (corner.type.includes('b') ? 0 : corner.radius)) + Math.sin(angle) * (corner.radius + ball.radius);
+                        ball.x = targetX;
+                        ball.y = targetY;
+                        
+                        const normalX = Math.cos(angle);
+                        const normalY = Math.sin(angle);
+                        const dotProduct = ball.vx * normalX + ball.vy * normalY;
+                        ball.vx = ball.vx - 2 * dotProduct * normalX;
+                        ball.vy = ball.vy - 2 * dotProduct * normalY;
+                        ball.vx *= 0.8;
+                        ball.vy *= 0.8;
                     }
                 });
-            });
-            
-            // Player collisions
-            [game.p1, game.p2].forEach(p => {
-                const dist = Math.sqrt((b.x - p.x) ** 2 + (b.y - p.y) ** 2);
-                if (dist < b.r + p.r) {
-                    const angle = Math.atan2(b.y - p.y, b.x - p.x);
-                    b.vx = Math.cos(angle) * 6;
-                    b.vy = Math.sin(angle) * 6;
-                    b.x = p.x + Math.cos(angle) * (b.r + p.r);
-                    b.y = p.y + Math.sin(angle) * (b.r + p.r);
-                }
-            });
-            
-            // Screen bounds
-            if (b.y - b.r < 25) {
-                b.y = 25 + b.r;
-                b.vy = Math.abs(b.vy) * 0.85;
-            } else if (b.y + b.r > canvas.height - 25) {
-                b.y = canvas.height - 25 - b.r;
-                b.vy = -Math.abs(b.vy) * 0.85;
-            }
-            
-            if (b.x - b.r < 25) {
-                b.x = 25 + b.r;
-                b.vx = Math.abs(b.vx) * 0.85;
-            } else if (b.x + b.r > canvas.width - 25) {
-                b.x = canvas.width - 25 - b.r;
-                b.vx = -Math.abs(b.vx) * 0.85;
             }
             
             checkGoals();
         }
         
         function checkGoals() {
-            if (isMP && !isHost) return;
-            
-            const b = game.ball;
-            
-            const d1 = Math.sqrt((b.x - game.goal1.x) ** 2 + (b.y - game.goal1.y) ** 2);
-            if (d1 < game.goal1.r - b.r) {
-                game.p1.score++;
-                reset();
-                if (game.p1.score >= 5) endGame('Red Player');
+            // Only host checks goals in multiplayer
+            if (isMultiplayer && !isHost) {
+                return;
             }
             
-            const d2 = Math.sqrt((b.x - game.goal2.x) ** 2 + (b.y - game.goal2.y) ** 2);
-            if (d2 < game.goal2.r - b.r) {
-                game.p2.score++;
-                reset();
-                if (game.p2.score >= 5) endGame('Blue Player');
+            const ball = gameState.ball;
+            
+            const dist1 = Math.sqrt((ball.x - gameState.goal1.x) ** 2 + (ball.y - gameState.goal1.y) ** 2);
+            if (dist1 < gameState.goal1.radius - ball.radius) {
+                gameState.player1.score++;
+                resetGameState();
+                
+                if (gameState.player1.score >= 5) {
+                    endGame('Red Wizard');
+                }
+            }
+            
+            const dist2 = Math.sqrt((ball.x - gameState.goal2.x) ** 2 + (ball.y - gameState.goal2.y) ** 2);
+            if (dist2 < gameState.goal2.radius - ball.radius) {
+                gameState.player2.score++;
+                resetGameState();
+                
+                if (gameState.player2.score >= 5) {
+                    endGame('Blue Wizard');
+                }
             }
         }
         
-        function reset() {
-            game.ball.x = 750;
-            game.ball.y = 450;
-            game.ball.vx = (Math.random() - 0.5) * 3;
-            game.ball.vy = (Math.random() - 0.5) * 3;
+        function resetGameState() {
+            gameState.ball.x = 500;
+            gameState.ball.y = 300;
+            gameState.ball.vx = (Math.random() - 0.5) * 3;
+            gameState.ball.vy = (Math.random() - 0.5) * 3;
             
-            game.p1.x = 150;
-            game.p1.y = 450;
-            game.p1.vx = 0;
-            game.p1.vy = 0;
-            game.p1.bubbles = [];
-            game.p1.ground = false;
+            gameState.player1.x = 100;
+            gameState.player1.y = 300;
+            gameState.player1.vx = 0;
+            gameState.player1.vy = 0;
+            gameState.player1.bubble = null;
+            gameState.player1.onGround = false;
             
-            game.p2.x = 1350;
-            game.p2.y = 450;
-            game.p2.vx = 0;
-            game.p2.vy = 0;
-            game.p2.bubbles = [];
-            game.p2.ground = false;
+            gameState.player2.x = 900;
+            gameState.player2.y = 300;
+            gameState.player2.vx = 0;
+            gameState.player2.vy = 0;
+            gameState.player2.bubble = null;
+            gameState.player2.onGround = false;
         }
         
-        function resetPos() {
-            if (isMP && !isHost) return;
-            
-            const gameOver = document.querySelector('.game-over');
-            if (gameOver) gameOver.remove();
-            
-            reset();
-            game.running = true;
-            
-            if (isMP && conn && conn.open) {
-                conn.send({ type: 'input', player: myPlayer, action: 'reset' });
-            }
+        function resetBall() {
+            gameState.ball.x = 500;
+            gameState.ball.y = 300;
+            gameState.ball.vx = (Math.random() - 0.5) * 3;
+            gameState.ball.vy = (Math.random() - 0.5) * 3;
         }
         
         function endGame(winner) {
-            game.running = false;
+            gameState.gameRunning = false;
             
-            const div = document.createElement('div');
-            div.className = 'game-over';
-            div.innerHTML = `
+            const gameOverDiv = document.createElement('div');
+            gameOverDiv.className = 'game-over';
+            gameOverDiv.innerHTML = `
                 <h2>${winner} Wins!</h2>
-                <p>Final Score: ${game.p1.score} - ${game.p2.score}</p>
-                <button class="btn" onclick="restart()">PLAY AGAIN</button>
+                <p>Final Score: ${gameState.player1.score} - ${gameState.player2.score}</p>
+                <button class="restart-btn" onclick="restartGame()">PLAY AGAIN</button>
             `;
-            document.getElementById('container').appendChild(div);
+            document.getElementById('gameContainer').appendChild(gameOverDiv);
         }
         
-        function restart() {
-            const gameOver = document.querySelector('.game-over');
-            if (gameOver) gameOver.remove();
+        function restartGame() {
+            const gameOverDiv = document.querySelector('.game-over');
+            if (gameOverDiv) gameOverDiv.remove();
             
-            game.p1.score = 0;
-            game.p2.score = 0;
-            reset();
-            game.running = true;
+            gameState.player1.x = 100;
+            gameState.player1.y = 300;
+            gameState.player1.vx = 0;
+            gameState.player1.vy = 0;
+            gameState.player1.score = 0;
+            gameState.player1.bubble = null;
             
-            if (isMP && conn && conn.open) {
-                conn.send({ type: 'restart' });
+            gameState.player2.x = 900;
+            gameState.player2.y = 300;
+            gameState.player2.vx = 0;
+            gameState.player2.vy = 0;
+            gameState.player2.score = 0;
+            gameState.player2.bubble = null;
+            
+            resetBall();
+            gameState.gameRunning = true;
+            
+            // Send restart message in multiplayer
+            if (isMultiplayer && connection && connection.open) {
+                connection.send({ type: 'restart' });
             }
         }
         
@@ -648,80 +964,99 @@
             ctx.fillStyle = '#001122';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Walls
-            ctx.fillStyle = '#333';
-            game.walls.forEach(w => {
-                ctx.fillRect(w.x, w.y, w.w, w.h);
+            ctx.fillStyle = '#333333';
+            gameState.walls.forEach(wall => {
+                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
             });
             
-            // Goals
-            ctx.fillStyle = '#f44';
+            ctx.fillStyle = '#333333';
+            if (gameState.corners) {
+                gameState.corners.forEach(corner => {
+                    ctx.beginPath();
+                    ctx.arc(
+                        corner.x + (corner.type.includes('r') ? 0 : corner.radius),
+                        corner.y + (corner.type.includes('b') ? 0 : corner.radius),
+                        corner.radius, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+                });
+            }
+            
+            ctx.fillStyle = gameState.goal1.color;
             ctx.beginPath();
-            ctx.arc(game.goal1.x, game.goal1.y, game.goal1.r, 0, Math.PI * 2);
+            ctx.arc(gameState.goal1.x, gameState.goal1.y, gameState.goal1.radius, 0, Math.PI * 2);
             ctx.fill();
             
-            ctx.fillStyle = '#44f';
+            ctx.fillStyle = gameState.goal2.color;
             ctx.beginPath();
-            ctx.arc(game.goal2.x, game.goal2.y, game.goal2.r, 0, Math.PI * 2);
+            ctx.arc(gameState.goal2.x, gameState.goal2.y, gameState.goal2.radius, 0, Math.PI * 2);
             ctx.fill();
             
-            // Bubbles
-            [game.p1, game.p2].forEach((p, i) => {
-                p.bubbles.forEach(bubble => {
-                    ctx.globalAlpha = bubble.alpha;
-                    ctx.strokeStyle = i === 0 ? '#f44' : '#44f';
+            [gameState.player1, gameState.player2].forEach(player => {
+                if (player.bubble) {
+                    ctx.globalAlpha = player.bubble.alpha;
+                    ctx.strokeStyle = player.color;
                     ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.arc(bubble.x, bubble.y, bubble.r, 0, Math.PI * 2);
+                    ctx.arc(player.bubble.x, player.bubble.y, player.bubble.radius, 0, Math.PI * 2);
                     ctx.stroke();
                     ctx.globalAlpha = 1;
-                });
+                }
             });
             
-            // Players
-            [game.p1, game.p2].forEach((p, i) => {
-                ctx.fillStyle = i === 0 ? '#f44' : '#44f';
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = ctx.fillStyle;
+            [gameState.player1, gameState.player2].forEach(player => {
+                ctx.fillStyle = player.color;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = player.color;
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
             });
             
-            // Ball
-            ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#fff';
+            ctx.fillStyle = gameState.ball.color;
             ctx.beginPath();
-            ctx.arc(game.ball.x, game.ball.y, game.ball.r, 0, Math.PI * 2);
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = gameState.ball.color;
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
         }
         
         function updateHUD() {
-            document.getElementById('score1').textContent = game.p1.score;
-            document.getElementById('score2').textContent = game.p2.score;
+            document.getElementById('score1').textContent = gameState.player1.score;
+            document.getElementById('score2').textContent = gameState.player2.score;
         }
         
         function gameLoop() {
-            if (!game.running) {
+            if (!gameState.gameRunning) {
                 requestAnimationFrame(gameLoop);
                 return;
             }
             
-            updateBubbles();
-            updatePlayer(game.p1);
-            updatePlayer(game.p2);
+            updatePlayer(gameState.player1);
+            updatePlayer(gameState.player2);
             updateBall();
             draw();
             updateHUD();
             
-            if (isHost) sendState();
+            // Send game state if host
+            if (isHost) {
+                sendGameState();
+            }
             
             requestAnimationFrame(gameLoop);
         }
         
+        // Start the game loop (but don't start the actual game until mode is selected)
         requestAnimationFrame(gameLoop);
     </script>
 </body>
