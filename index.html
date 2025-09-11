@@ -648,12 +648,12 @@ if (e.code === 'Space') {
                     if (gameState.keys['KeyS']) jumpY = -gameState.jumpPower * 0.5;
                     if (gameState.keys['KeyA']) {
                         horizontalIntent = true;
-                        jumpX = -9.5;  // Flatter horizontal jump
+                        jumpX = -5;  // Flatter horizontal jump
                         jumpY = -3.4;   // 20-degree angle
                     }
                     if (gameState.keys['KeyD']) {
                         horizontalIntent = true;
-                        jumpX = 9.5;   // Flatter horizontal jump
+                        jumpX = 5;   // Flatter horizontal jump
                         jumpY = -3.4;   // 20-degree angle
                     }
                 } else {
@@ -661,12 +661,12 @@ if (e.code === 'Space') {
                     if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
                     if (gameState.keys['ArrowLeft']) {
                         horizontalIntent = true;
-                        jumpX = -9.5;  // Flatter horizontal jump
+                        jumpX = -5;  // Flatter horizontal jump
                         jumpY = -3.4;   // 20-degree angle
                     }
                     if (gameState.keys['ArrowRight']) {
                         horizontalIntent = true;
-                        jumpX = 9.5;   // Flatter horizontal jump
+                        jumpX = 5;   // Flatter horizontal jump
                         jumpY = -3.4;   // 20-degree angle
                     }
                 }
@@ -676,12 +676,12 @@ if (e.code === 'Space') {
                 if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
                 if (gameState.keys['ArrowLeft']) {
                     horizontalIntent = true;
-                    jumpX = -12;   // Increased horizontal thrust
+                    jumpX = -5;   // Increased horizontal thrust
                     jumpY = -4.3;   // Maintains ~20-degree angle
                 }
                 if (gameState.keys['ArrowRight']) {
                     horizontalIntent = true;
-                    jumpX = 12;    // Increased horizontal thrust
+                    jumpX = 5;    // Increased horizontal thrust
                     jumpY = -4.3;   // Maintains ~20-degree angle
                 }
             }
