@@ -523,8 +523,8 @@
             document.getElementById('connectionStatus').style.display = 'block';
             
             // Update controls display for multiplayer
-            document.getElementById('controls-p1').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
-            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
+            document.getElementById('controls-p1').textContent = 'WASD: Move | ENTER: Jump/Bubble';
+document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
             
             updateConnectionStatus('Connected - Playing!', 'connected');
             isMultiplayer = true;
@@ -537,8 +537,8 @@
             document.getElementById('controls').style.display = 'flex';
             
             // Keep original controls for local play
-            document.getElementById('controls-p1').textContent = 'WASD: Move | SPACE: Jump/Bubble';
-            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
+           document.getElementById('controls-p1').textContent = 'WASD: Move | ENTER: Jump/Bubble';
+document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
             
             isMultiplayer = false;
             resetGameState();
@@ -588,26 +588,25 @@
                 sendInput(myKeys);
             }
             
-            if (e.code === 'Space') {
-                e.preventDefault();
-                if (!isMultiplayer) {
-                    // Local play - Player 1 uses space
-                    jump(gameState.player1);
-                } else {
-                    // Multiplayer - both players use space for their own character
-                    const player = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
-                    jump(player);
-                    sendInput({}, 'jump');
-                }
-            }
-            if (e.code === 'Enter') {
-                e.preventDefault();
-                if (!isMultiplayer) {
-                    // Local play only - Player 2 uses enter
-                    jump(gameState.player2);
-                }
-                // In multiplayer, Enter is not used
-            }
+           if (e.code === 'Enter') {
+    e.preventDefault();
+    if (!isMultiplayer) {
+        // Local play - Player 1 uses Enter (SWAPPED FROM SPACE)
+        jump(gameState.player1);    // ← PLAYER 1 JUMPS WITH ENTER
+    } else {
+        // Multiplayer - both players use Enter
+        const player = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+        jump(player);
+        sendInput({}, 'jump');
+    }
+}
+if (e.code === 'Space') {
+    e.preventDefault();
+    if (!isMultiplayer) {
+        // Local play - Player 2 uses Space (SWAPPED FROM ENTER)
+        jump(gameState.player2);    // ← PLAYER 2 JUMPS WITH SPACE
+    }
+}
             if (e.code === 'Escape') {
                 e.preventDefault();
                 manualReset();
