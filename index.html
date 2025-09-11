@@ -34,7 +34,7 @@
             left: 10px;
             right: 10px;
             display: flex;
-            justify-content: space-between;
+            justify-content: -between;
             font-size: 32px;
             font-weight: bold;
             text-shadow: 0 0 10px #ffffff;
@@ -47,7 +47,7 @@
             font-size: 14px;
             color: #cccccc;
             display: flex;
-            justify-content: space-around;
+            justify-content: -around;
         }
         
         .player-controls {
@@ -231,7 +231,7 @@
         <div id="controls" style="display: none;">
             <div class="player-controls">
                 <div style="color: #ff4444;"><strong>RED WIZARD</strong></div>
-                <div id="controls-p1">WASD: Move | SPACE: Jump/Bubble</div>
+                <div id="controls-p1">WASD: Move | ENTER: Jump/Bubble</div>
             </div>
             <div style="flex: 0; padding: 0 40px; font-size: 12px; color: #888;">
                 <div>• Wizards can pass through bubbles and goals</div>
@@ -241,7 +241,7 @@
             </div>
             <div class="player-controls">
                 <div style="color: #4444ff;"><strong>BLUE WIZARD</strong></div>
-                <div id="controls-p2">Arrow Keys: Move | ENTER: Jump/Bubble</div>
+                <div id="controls-p2">Arrow Keys: Move | SPACE: Jump/Bubble</div>
             </div>
         </div>
         
@@ -523,7 +523,7 @@
             document.getElementById('connectionStatus').style.display = 'block';
             
             // Update controls display for multiplayer
-            document.getElementById('controls-p1').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p1').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
             document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
             
             updateConnectionStatus('Connected - Playing!', 'connected');
@@ -537,8 +537,8 @@
             document.getElementById('controls').style.display = 'flex';
             
             // Keep original controls for local play
-            document.getElementById('controls-p1').textContent = 'WASD: Move | SPACE: Jump/Bubble';
-            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
+            document.getElementById('controls-p1').textContent = 'WASD: Move | ENTER: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
             
             isMultiplayer = false;
             resetGameState();
