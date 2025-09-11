@@ -34,7 +34,7 @@
             left: 10px;
             right: 10px;
             display: flex;
-            justify-content: -between;
+            justify-content: space-between;
             font-size: 32px;
             font-weight: bold;
             text-shadow: 0 0 10px #ffffff;
@@ -47,7 +47,7 @@
             font-size: 14px;
             color: #cccccc;
             display: flex;
-            justify-content: -around;
+            justify-content: space-around;
         }
         
         .player-controls {
@@ -227,11 +227,11 @@
             <div class="score-display">DEATHBALL</div>
             <div style="color: #4444ff;">Player 2: <span id="score2">0</span></div>
         </div>
-        <canvas id="gameCanvas" width="1025" height="625" style="display: none;"></canvas>
+        <canvas id="gameCanvas" width="1500" height="900" style="display: none;"></canvas>
         <div id="controls" style="display: none;">
             <div class="player-controls">
                 <div style="color: #ff4444;"><strong>RED WIZARD</strong></div>
-                <div id="controls-p1">WASD: Move | ENTER: Jump/Bubble</div>
+                <div id="controls-p1">WASD: Move | SPACE: Jump/Bubble</div>
             </div>
             <div style="flex: 0; padding: 0 40px; font-size: 12px; color: #888;">
                 <div>• Wizards can pass through bubbles and goals</div>
@@ -241,7 +241,7 @@
             </div>
             <div class="player-controls">
                 <div style="color: #4444ff;"><strong>BLUE WIZARD</strong></div>
-                <div id="controls-p2">Arrow Keys: Move | SPACE: Jump/Bubble</div>
+                <div id="controls-p2">Arrow Keys: Move | ENTER: Jump/Bubble</div>
             </div>
         </div>
         
@@ -265,8 +265,8 @@
         // Game state
         let gameState = {
             player1: {
-                x: 100,
-                y: 300,
+                x: 150,
+                y: 450,
                 vx: 0,
                 vy: 0,
                 radius: 15,
@@ -276,8 +276,8 @@
                 onGround: false
             },
             player2: {
-                x: 900,
-                y: 300,
+                x: 1350,
+                y: 450,
                 vx: 0,
                 vy: 0,
                 radius: 15,
@@ -287,26 +287,26 @@
                 onGround: false
             },
             ball: {
-                x: 500,
-                y: 300,
+                x: 750,
+                y: 450,
                 vx: 0,
                 vy: 0,
                 radius: 15,
                 color: '#ffffff'
             },
-            goal1: { x: 200, y: 200, radius: 50, color: '#ff4444' },
-            goal2: { x: 800, y: 200, radius: 50, color: '#4444ff' },
+            goal1: { x: 300, y: 300, radius: 50, color: '#ff4444' },
+            goal2: { x: 1200, y: 300, radius: 50, color: '#4444ff' },
             walls: [
-                { x: 0, y: 25, width: 25, height: 575 },
-                { x: 1000, y: 25, width: 25, height: 575 },
-                { x: 25, y: 0, width: 975, height: 25 },
-                { x: 25, y: 600, width: 975, height: 25 }
+                { x: 0, y: 25, width: 25, height: 850 },
+                { x: 1475, y: 25, width: 25, height: 850 },
+                { x: 25, y: 0, width: 1450, height: 25 },
+                { x: 25, y: 875, width: 1450, height: 25 }
             ],
             corners: [
                 { x: 0, y: 0, radius: 25, type: 'tl' },
-                { x: 1000, y: 0, radius: 25, type: 'tr' },
-                { x: 0, y: 600, radius: 25, type: 'bl' },
-                { x: 1000, y: 600, radius: 25, type: 'br' }
+                { x: 1475, y: 0, radius: 25, type: 'tr' },
+                { x: 0, y: 875, radius: 25, type: 'bl' },
+                { x: 1475, y: 875, radius: 25, type: 'br' }
             ],
             keys: {},
             gameRunning: true,
@@ -481,23 +481,23 @@
             if (gameOverDiv) gameOverDiv.remove();
             
             // Reset both players
-            gameState.player1.x = 100;
-            gameState.player1.y = 300;
+            gameState.player1.x = 150;
+            gameState.player1.y = 450;
             gameState.player1.vx = 0;
             gameState.player1.vy = 0;
             gameState.player1.bubble = null;
             gameState.player1.onGround = false;
             
-            gameState.player2.x = 900;
-            gameState.player2.y = 300;
+            gameState.player2.x = 1350;
+            gameState.player2.y = 450;
             gameState.player2.vx = 0;
             gameState.player2.vy = 0;
             gameState.player2.bubble = null;
             gameState.player2.onGround = false;
             
             // Reset ball
-            gameState.ball.x = 500;
-            gameState.ball.y = 300;
+            gameState.ball.x = 750;
+            gameState.ball.y = 450;
             gameState.ball.vx = (Math.random() - 0.5) * 3;
             gameState.ball.vy = (Math.random() - 0.5) * 3;
             
@@ -524,7 +524,7 @@
             
             // Update controls display for multiplayer
             document.getElementById('controls-p1').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
-            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
             
             updateConnectionStatus('Connected - Playing!', 'connected');
             isMultiplayer = true;
@@ -537,8 +537,8 @@
             document.getElementById('controls').style.display = 'flex';
             
             // Keep original controls for local play
-            document.getElementById('controls-p1').textContent = 'WASD: Move | ENTER: Jump/Bubble';
-            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p1').textContent = 'WASD: Move | SPACE: Jump/Bubble';
+            document.getElementById('controls-p2').textContent = 'Arrow Keys: Move | ENTER: Jump/Bubble';
             
             isMultiplayer = false;
             resetGameState();
@@ -639,25 +639,52 @@
             
             let jumpX = 0, jumpY = gameState.jumpPower;
             
+            // Calculate jump direction based on controls
+            let horizontalIntent = false;
+            
             if (!isMultiplayer) {
                 // Local play - original controls
                 if (player === gameState.player1) {
                     if (gameState.keys['KeyW']) jumpY = gameState.jumpPower;
                     if (gameState.keys['KeyS']) jumpY = -gameState.jumpPower * 0.5;
-                    if (gameState.keys['KeyA']) jumpX = -gameState.moveSpeed;
-                    if (gameState.keys['KeyD']) jumpX = gameState.moveSpeed;
+                    if (gameState.keys['KeyA']) {
+                        horizontalIntent = true;
+                        jumpX = -9.5;  // Flatter horizontal jump
+                        jumpY = -3.4;   // 20-degree angle
+                    }
+                    if (gameState.keys['KeyD']) {
+                        horizontalIntent = true;
+                        jumpX = 9.5;   // Flatter horizontal jump
+                        jumpY = -3.4;   // 20-degree angle
+                    }
                 } else {
                     if (gameState.keys['ArrowUp']) jumpY = gameState.jumpPower;
                     if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
-                    if (gameState.keys['ArrowLeft']) jumpX = -gameState.moveSpeed;
-                    if (gameState.keys['ArrowRight']) jumpX = gameState.moveSpeed;
+                    if (gameState.keys['ArrowLeft']) {
+                        horizontalIntent = true;
+                        jumpX = -9.5;  // Flatter horizontal jump
+                        jumpY = -3.4;   // 20-degree angle
+                    }
+                    if (gameState.keys['ArrowRight']) {
+                        horizontalIntent = true;
+                        jumpX = 9.5;   // Flatter horizontal jump
+                        jumpY = -3.4;   // 20-degree angle
+                    }
                 }
             } else {
                 // Multiplayer - both players use arrow keys
                 if (gameState.keys['ArrowUp']) jumpY = gameState.jumpPower;
                 if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
-                if (gameState.keys['ArrowLeft']) jumpX = -gameState.moveSpeed;
-                if (gameState.keys['ArrowRight']) jumpX = gameState.moveSpeed;
+                if (gameState.keys['ArrowLeft']) {
+                    horizontalIntent = true;
+                    jumpX = -12;   // Increased horizontal thrust
+                    jumpY = -4.3;   // Maintains ~20-degree angle
+                }
+                if (gameState.keys['ArrowRight']) {
+                    horizontalIntent = true;
+                    jumpX = 12;    // Increased horizontal thrust
+                    jumpY = -4.3;   // Maintains ~20-degree angle
+                }
             }
             
             const thrustMultiplier = 1.3;
@@ -683,12 +710,24 @@
             const speedMultiplier = gameState.slowZoneActive ? 0.5 : 1.0;
             const currentMoveSpeed = gameState.moveSpeed * speedMultiplier;
             
-            if (player === gameState.player1) {
-                if (gameState.keys['KeyA']) player.vx = Math.max(player.vx - 0.5, -currentMoveSpeed);
-                if (gameState.keys['KeyD']) player.vx = Math.min(player.vx + 0.5, currentMoveSpeed);
+            // Only apply movement speed limits when on ground
+            if (player.onGround) {
+                if (player === gameState.player1) {
+                    if (gameState.keys['KeyA']) player.vx = Math.max(player.vx - 0.5, -currentMoveSpeed);
+                    if (gameState.keys['KeyD']) player.vx = Math.min(player.vx + 0.5, currentMoveSpeed);
+                } else {
+                    if (gameState.keys['ArrowLeft']) player.vx = Math.max(player.vx - 0.5, -currentMoveSpeed);
+                    if (gameState.keys['ArrowRight']) player.vx = Math.min(player.vx + 0.5, currentMoveSpeed);
+                }
             } else {
-                if (gameState.keys['ArrowLeft']) player.vx = Math.max(player.vx - 0.5, -currentMoveSpeed);
-                if (gameState.keys['ArrowRight']) player.vx = Math.min(player.vx + 0.5, currentMoveSpeed);
+                // Air control - much weaker acceleration with soft speed limit
+                if (player === gameState.player1) {
+                    if (gameState.keys['KeyA'] && player.vx > -8) player.vx -= 0.2;
+                    if (gameState.keys['KeyD'] && player.vx < 8) player.vx += 0.2;
+                } else {
+                    if (gameState.keys['ArrowLeft'] && player.vx > -8) player.vx -= 0.2;
+                    if (gameState.keys['ArrowRight'] && player.vx < 8) player.vx += 0.2;
+                }
             }
             
             if (!player.onGround) {
@@ -893,20 +932,20 @@
         }
         
         function resetGameState() {
-            gameState.ball.x = 500;
-            gameState.ball.y = 300;
+            gameState.ball.x = 750;
+            gameState.ball.y = 450;
             gameState.ball.vx = (Math.random() - 0.5) * 3;
             gameState.ball.vy = (Math.random() - 0.5) * 3;
             
-            gameState.player1.x = 100;
-            gameState.player1.y = 300;
+            gameState.player1.x = 150;
+            gameState.player1.y = 450;
             gameState.player1.vx = 0;
             gameState.player1.vy = 0;
             gameState.player1.bubble = null;
             gameState.player1.onGround = false;
             
-            gameState.player2.x = 900;
-            gameState.player2.y = 300;
+            gameState.player2.x = 1350;
+            gameState.player2.y = 450;
             gameState.player2.vx = 0;
             gameState.player2.vy = 0;
             gameState.player2.bubble = null;
@@ -914,8 +953,8 @@
         }
         
         function resetBall() {
-            gameState.ball.x = 500;
-            gameState.ball.y = 300;
+            gameState.ball.x = 750;
+            gameState.ball.y = 450;
             gameState.ball.vx = (Math.random() - 0.5) * 3;
             gameState.ball.vy = (Math.random() - 0.5) * 3;
         }
@@ -937,15 +976,15 @@
             const gameOverDiv = document.querySelector('.game-over');
             if (gameOverDiv) gameOverDiv.remove();
             
-            gameState.player1.x = 100;
-            gameState.player1.y = 300;
+            gameState.player1.x = 150;
+            gameState.player1.y = 450;
             gameState.player1.vx = 0;
             gameState.player1.vy = 0;
             gameState.player1.score = 0;
             gameState.player1.bubble = null;
             
-            gameState.player2.x = 900;
-            gameState.player2.y = 300;
+            gameState.player2.x = 1350;
+            gameState.player2.y = 450;
             gameState.player2.vx = 0;
             gameState.player2.vy = 0;
             gameState.player2.score = 0;
