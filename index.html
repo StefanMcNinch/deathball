@@ -234,7 +234,7 @@
                 <div id="controls-p1">WASD: Move | SPACE: Jump/Bubble</div>
             </div>
             <div style="flex: 0; padding: 0 40px; font-size: 12px; color: #888;">
-                <div>• Wizards can pass through bubbles and goals</div>
+                <div>• Wizards can pass through  and goals</div>
                 <div>• Ball bounces off bubbles (2x wizard bounce)</div>
                 <div>• First to 5 points wins!</div>
                 <div>• Press ESC to reset positions (Host only)</div>
@@ -626,7 +626,7 @@ if (e.code === 'Space') {
         // Game functions (keeping your original logic)
         function jump(player) {
             // If already 3 bubbles, remove the oldest one
-            if (player.bubbles.length >= 3) {
+            if (player.bubbles.length >= 2) {
                 player.bubbles.shift(); // Remove first (oldest) bubble
             }
             
@@ -678,12 +678,12 @@ if (e.code === 'Space') {
                 if (gameState.keys['ArrowDown']) jumpY = -gameState.jumpPower * 0.5;
                 if (gameState.keys['ArrowLeft']) {
                     horizontalIntent = true;
-                    jumpX = -5;   // Increased horizontal thrust
+                    jumpX = -6;   // Increased horizontal thrust
                     jumpY = -4.3;   // Maintains ~20-degree angle
                 }
                 if (gameState.keys['ArrowRight']) {
                     horizontalIntent = true;
-                    jumpX = 5;    // Increased horizontal thrust
+                    jumpX = 6;    // Increased horizontal thrust
                     jumpY = -4.3;   // Maintains ~20-degree angle
                 }
             }
