@@ -272,7 +272,7 @@
                 radius: 15,
                 color: '#ff4444',
                 score: 0,
-                bubble: null,
+                bubbles: [],
                 onGround: false
             },
             player2: {
@@ -283,7 +283,7 @@
                 radius: 15,
                 color: '#4444ff',
                 score: 0,
-                bubble: null,
+                bubbles: [],
                 onGround: false
             },
             ball: {
@@ -485,14 +485,14 @@
             gameState.player1.y = 450;
             gameState.player1.vx = 0;
             gameState.player1.vy = 0;
-            gameState.player1.bubble = null;
+            gameState.player1.bubbles = [];
             gameState.player1.onGround = false;
             
             gameState.player2.x = 1350;
             gameState.player2.y = 450;
             gameState.player2.vx = 0;
             gameState.player2.vy = 0;
-            gameState.player2.bubble = null;
+            gameState.player2.bubbles = [];
             gameState.player2.onGround = false;
             
             // Reset ball
@@ -625,16 +625,18 @@ if (e.code === 'Space') {
         
         // Game functions (keeping your original logic)
         function jump(player) {
-            if (player.bubble) {
-                player.bubble = null;
+            // If already 3 bubbles, remove the oldest one
+            if (player.bubbles.length >= 3) {
+                player.bubbles.shift(); // Remove first (oldest) bubble
             }
             
-            player.bubble = {
+            // Add new bubble at player's current position
+            player.bubbles.push({
                 x: player.x,
                 y: player.y,
                 radius: 50,
                 alpha: 0.8
-            };
+            });
             
             let jumpX = 0, jumpY = gameState.jumpPower;
             
@@ -818,7 +820,7 @@ if (e.code === 'Space') {
                         ball.vy = -Math.abs(ball.vy) * 0.85;
                     }
                     else if (ball.vy < 0 && ball.y > wall.y + wall.height) {
-                        ball.y = wall.y + wall.height + ball.radius;
+                        ball.y = wall.y + ball.height + ball.radius;
                         ball.vy = Math.abs(ball.vy) * 0.85;
                     }
                     else if (ball.vx > 0 && ball.x < wall.x) {
@@ -832,17 +834,20 @@ if (e.code === 'Space') {
                 }
             }
             
+            // Check bubble collisions for both players
             [gameState.player1, gameState.player2].forEach(player => {
-                if (player.bubble) {
-                    const dist = Math.sqrt((ball.x - player.bubble.x) ** 2 + (ball.y - player.bubble.y) ** 2);
-                    if (dist < ball.radius + player.bubble.radius) {
-                        const angle = Math.atan2(ball.y - player.bubble.y, ball.x - player.bubble.x);
-                        const force = 10;
-                        ball.vx = Math.cos(angle) * force;
-                        ball.vy = Math.sin(angle) * force;
-                        ball.x = player.bubble.x + Math.cos(angle) * (ball.radius + player.bubble.radius);
-                        ball.y = player.bubble.y + Math.sin(angle) * (ball.radius + player.bubble.radius);
-                    }
+                if (player.bubbles && player.bubbles.length > 0) {
+                    player.bubbles.forEach(bubble => {
+                        const dist = Math.sqrt((ball.x - bubble.x) ** 2 + (ball.y - bubble.y) ** 2);
+                        if (dist < ball.radius + bubble.radius) {
+                            const angle = Math.atan2(ball.y - bubble.y, ball.x - bubble.x);
+                            const force = 10;
+                            ball.vx = Math.cos(angle) * force;
+                            ball.vy = Math.sin(angle) * force;
+                            ball.x = bubble.x + Math.cos(angle) * (ball.radius + bubble.radius);
+                            ball.y = bubble.y + Math.sin(angle) * (ball.radius + bubble.radius);
+                        }
+                    });
                 }
             });
             
@@ -940,14 +945,14 @@ if (e.code === 'Space') {
             gameState.player1.y = 450;
             gameState.player1.vx = 0;
             gameState.player1.vy = 0;
-            gameState.player1.bubble = null;
+            gameState.player1.bubbles = [];
             gameState.player1.onGround = false;
             
             gameState.player2.x = 1350;
             gameState.player2.y = 450;
             gameState.player2.vx = 0;
             gameState.player2.vy = 0;
-            gameState.player2.bubble = null;
+            gameState.player2.bubbles = [];
             gameState.player2.onGround = false;
         }
         
@@ -980,14 +985,14 @@ if (e.code === 'Space') {
             gameState.player1.vx = 0;
             gameState.player1.vy = 0;
             gameState.player1.score = 0;
-            gameState.player1.bubble = null;
+            gameState.player1.bubbles = [];
             
             gameState.player2.x = 1350;
             gameState.player2.y = 450;
             gameState.player2.vx = 0;
             gameState.player2.vy = 0;
             gameState.player2.score = 0;
-            gameState.player2.bubble = null;
+            gameState.player2.bubbles = [];
             
             resetBall();
             gameState.gameRunning = true;
@@ -1030,14 +1035,17 @@ if (e.code === 'Space') {
             ctx.arc(gameState.goal2.x, gameState.goal2.y, gameState.goal2.radius, 0, Math.PI * 2);
             ctx.fill();
             
+            // Draw bubbles for both players
             [gameState.player1, gameState.player2].forEach(player => {
-                if (player.bubble) {
-                    ctx.globalAlpha = player.bubble.alpha;
-                    ctx.strokeStyle = player.color;
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(player.bubble.x, player.bubble.y, player.bubble.radius, 0, Math.PI * 2);
-                    ctx.stroke();
+                if (player.bubbles && player.bubbles.length > 0) {
+                    player.bubbles.forEach(bubble => {
+                        ctx.globalAlpha = bubble.alpha;
+                        ctx.strokeStyle = player.color;
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    });
                     ctx.globalAlpha = 1;
                 }
             });
